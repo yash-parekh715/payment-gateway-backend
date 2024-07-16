@@ -1,0 +1,38 @@
+# azure-pipelines.yml
+trigger:
+  - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  NODE_VERSION: "20.x"
+  DOCKER_IMAGE: "paymentgatewaycrud-payment-gateway"
+
+steps:
+  - task: UseNode@2
+    inputs:
+      versionSpec: $(NODE_VERSION)
+    displayName: "Set up Node.js"
+
+  - script: |
+      npm install
+    displayName: "Install Dependencies"
+
+  - task: Docker@2
+    inputs:
+      containerRegistry: "$(dockerRegistryServiceConnection)"
+      repository: "yashparekh715/$(DOCKER_IMAGE)"
+      command: "buildAndPush"
+      Dockerfile: "**/Dockerfile"
+      tags: |
+        latest
+    displayName: "Build and Push Docker Image"
+
+  - task: AzureWebAppContainer@1
+    inputs:
+      azureSubscription: "$(azureSubscription)"
+      appName: "your-azure-web-app-name"
+      containers: |
+        $(dockerRegistryServiceConnection)/yashparekh715/$(DOCKER_IMAGE):latest
+    displayName: "Deploy to Azure Web App"
